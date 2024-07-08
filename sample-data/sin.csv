@@ -1,0 +1,7 @@
+#group,false,false,false,false,true,true,true
+#datatype,string,long,dateTime:RFC3339,double,string,string,string
+#default,_result,,,,,,
+,result,table,_time,_value,_measurement,sensor,_field
+,,0,2024-07-07T00:00:00Z,12.34,sensor,sensor1,voltage
+,,0,2024-07-07T00:05:00Z,34.56,sensor,sensor1,voltage
+,,0,2024-07-07T00:10:00Z,56.78,sensor,sensor1,voltage
