@@ -1,4 +1,4 @@
-import { QuickInputButtons,QuickInputButton, window, Disposable, Uri, ExtensionContext } from "vscode";
+import { QuickInputButtons,QuickInputButton, window, Disposable, Uri, ExtensionContext, InputBox } from "vscode";
 import { ServerDetails } from "./server-details";
 import { ServerRepository } from "./server-repository";
 import { ADD_SERVER_LABEL, REMOVE_SERVER_LABEL } from "./constants";
@@ -23,7 +23,7 @@ async function addServer(context: ExtensionContext ) {
 class AddServerInput {
 
 	private step:number = 0; 
-	private totalSteps: number = 4; 
+	private totalSteps: number = 5; 
 	private state: Partial<ServerDetails>;
 	private existingServers: string[];
 	private context: ExtensionContext; 
@@ -44,13 +44,15 @@ class AddServerInput {
 			result = await this.getToken(); 
 		}else if(this.step === 3 ) {
 			result = await this.getBucket(); 
+		}else if(this.step === 4 ) {
+			result = await this.getOrganization(); 
 		}
 
 		return result; 
 	}
 
 	public async saveResults(){
-		if(this.state.serverAddress && this.state.serverName && this.state.serverToken && this.state.bucket){
+		if(this.state.serverAddress && this.state.serverName && this.state.token && this.state.bucket){
 			const newState = this.state as ServerDetails;
 			return await ServerRepository.saveServer(newState, this.context); 
 		}
@@ -66,6 +68,7 @@ class AddServerInput {
 		const disposables: Disposable[] = [];
 		try {
 			return await new Promise<boolean>((resolve, reject) => {
+				
 				const input = window.createInputBox();
 				input.title = "Server Label";
 				input.step = this.step + 1;
@@ -84,31 +87,32 @@ class AddServerInput {
 					return isUnique && isNotSpecial; 
 				};
 				
-				disposables.push(
-					
-					input.onDidTriggerButton(item => {
-						reject();
-					}),
-					input.onDidAccept(async () => {
-						const value = input.value.trim() ?? '';
-						if (validate(value)) {
-							this.state.serverName = value; 
-							this.step++; 
-							resolve(true);
-						}
-					}),
-					input.onDidChangeValue(async text => {
-						if (validate(text)) {
-							input.validationMessage = undefined;
-						} else {
-							input.validationMessage = "Server Name Already Exists";
-						}
-					}),
-					input.onDidHide(() => {
-						reject(); 
-					}),
-					input
-				);
+				disposables.push(input); 
+
+				input.onDidTriggerButton(item => {
+					reject();
+				}, this, disposables);
+
+				input.onDidAccept(async () => {
+					const value = input.value.trim() ?? '';
+					if (validate(value)) {
+						this.state.serverName = value; 
+						this.step++; 
+						resolve(true);
+					}
+				}, this, disposables);
+
+				input.onDidChangeValue(async text => {
+					if (validate(text)) {
+						input.validationMessage = undefined;
+					} else {
+						input.validationMessage = "Server Name Already Exists";
+					}
+				}, this, disposables);
+
+				input.onDidHide(() => {
+					reject(); 
+				}, this, disposables);
 
 				input.show();
 			});
@@ -143,35 +147,37 @@ class AddServerInput {
 					return newValue.length > 3; 
 				};
 				
-				disposables.push(
-					input.onDidTriggerButton(item => {
-						if(item === QuickInputButtons.Back){
-							this.step--;
-							resolve(true);
-						}else{
-							reject(); 
-						} 
-					}),
-					input.onDidAccept(async () => {
-						const value = input.value.trim();
-						if (validate(value)) {
-							this.state.serverAddress = value; 
-							this.step++; 
-							resolve(true);
-						}
-					}),
-					input.onDidChangeValue(async text => {
-						if (validate(text)) {
-							input.validationMessage = undefined;
-						} else {
-							input.validationMessage = "Url is invalid";
-						}
-					}),
-					input.onDidHide(() => {
+				disposables.push(input); 
+
+				input.onDidTriggerButton(item => {
+					if(item === QuickInputButtons.Back){
+						this.step--;
+						resolve(true);
+					}else{
 						reject(); 
-					}),
-					input
-				);
+					} 
+				}, this, disposables);
+
+				input.onDidAccept(async () => {
+					const value = input.value.trim();
+					if (validate(value)) {
+						this.state.serverAddress = value; 
+						this.step++; 
+						resolve(true);
+					}
+				}, this, disposables);
+
+				input.onDidChangeValue(async text => {
+					if (validate(text)) {
+						input.validationMessage = undefined;
+					} else {
+						input.validationMessage = "Url is invalid";
+					}
+				}, this, disposables);
+
+				input.onDidHide(() => {
+					reject(); 
+				}, this, disposables);
 
 				input.show();
 			});
@@ -193,7 +199,7 @@ class AddServerInput {
 				input.title = "Server Token";
 				input.step = this.step + 1;
 				input.totalSteps = this.totalSteps;
-				input.value = this.state.serverToken || '';
+				input.value = this.state.token || '';
 				input.prompt = "Server Token?";
 				input.placeholder = "";
 				input.ignoreFocusOut = true;
@@ -206,35 +212,33 @@ class AddServerInput {
 					return newValue.length > 3; 
 				};
 				
-				disposables.push(
-					input.onDidTriggerButton(item => {
-						if(item === QuickInputButtons.Back){
-							this.step--;
-							resolve(true);
-						}else{
-							reject(); 
-						} 
-					}),
-					input.onDidAccept(async () => {
-						const value = input.value.trim();
-						if (validate(value)) {
-							this.state.serverToken = value; 
-							this.step++; 
-							resolve(true);
-						}
-					}),
-					input.onDidChangeValue(async text => {
-						if (validate(text)) {
-							input.validationMessage = undefined;
-						} else {
-							input.validationMessage = "Token is invalid";
-						}
-					}),
-					input.onDidHide(() => {
+				disposables.push(input); 
+				input.onDidTriggerButton(item => {
+					if(item === QuickInputButtons.Back){
+						this.step--;
+						resolve(true);
+					}else{
 						reject(); 
-					}),
-					input
-				);
+					} 
+				}, this, disposables);
+				input.onDidAccept(async () => {
+					const value = input.value.trim();
+					if (validate(value)) {
+						this.state.token = value; 
+						this.step++; 
+						resolve(true);
+					}
+				}, this, disposables);
+				input.onDidChangeValue(async text => {
+					if (validate(text)) {
+						input.validationMessage = undefined;
+					} else {
+						input.validationMessage = "Token is invalid";
+					}
+				}, this, disposables);
+				input.onDidHide(() => {
+					reject(); 
+				}, this, disposables);
 
 				input.show();
 			});
@@ -268,36 +272,98 @@ class AddServerInput {
 				const validate = (newValue:string)=>{
 					return newValue.length > 0; 
 				};
-				
-				disposables.push(
-					input.onDidTriggerButton(item => {
-						if(item === QuickInputButtons.Back){
-							this.step--;
-							resolve(true);
-						}else{
-							reject(); 
-						} 
-					}),
-					input.onDidAccept(async () => {
-						const value = input.value.trim();
-						if (validate(value)) {
-							this.state.bucket = value; 
-							this.step++; 
-							resolve(true);
-						}
-					}),
-					input.onDidChangeValue(async text => {
-						if (validate(text)) {
-							input.validationMessage = undefined;
-						} else {
-							input.validationMessage = "Bucket is invalid";
-						}
-					}),
-					input.onDidHide(() => {
+
+				disposables.push(input); 
+				input.onDidTriggerButton(item => {
+					if(item === QuickInputButtons.Back){
+						this.step--;
+						resolve(true);
+					}else{
 						reject(); 
-					}),
-					input
-				);
+					} 
+				}, this, disposables);
+				input.onDidAccept(async () => {
+					const value = input.value.trim();
+					if (validate(value)) {
+						this.state.bucket = value; 
+						this.step++; 
+						resolve(true);
+					}
+				}, this, disposables);
+				input.onDidChangeValue(async text => {
+					if (validate(text)) {
+						input.validationMessage = undefined;
+					} else {
+						input.validationMessage = "Bucket is invalid";
+					}
+				}, this, disposables);
+				input.onDidHide(() => {
+					reject(); 
+				}, this, disposables);
+
+				input.show();
+			});
+		} finally {
+			disposables.forEach(d => d.dispose());
+		}
+	}
+
+	private async getOrganization() {
+		const CancelButton: QuickInputButton = { tooltip:'Cancel', iconPath:{
+			dark: Uri.file(this.context.asAbsolutePath('resources/dark/add.svg')),
+			light: Uri.file(this.context.asAbsolutePath('resources/light/add.svg')),
+		}};
+
+		const disposables: Disposable[] = [];
+		try {
+			return await new Promise<boolean>((resolve, reject) => {
+				const input = window.createInputBox();
+				input.title = "Organization ID";
+				input.step = this.step + 1;
+				input.totalSteps = this.totalSteps;
+				input.value = this.state.orgId || '';
+				input.prompt = "Organization ID";
+				input.placeholder = "################";
+				input.ignoreFocusOut = true;
+				input.buttons = [
+					QuickInputButtons.Back,
+					CancelButton
+				];
+				
+				const validate = (newValue:string)=>{
+					return newValue.length > 10; 
+				};
+
+				disposables.push(input); 
+				input.onDidTriggerButton(item => {
+					if(item === QuickInputButtons.Back){
+						this.step--;
+						resolve(true);
+					}else{
+						reject(); 
+					} 
+				}, this, disposables);
+
+				input.onDidAccept(async () => {
+					const value = input.value.trim();
+					if (validate(value)) {
+						this.state.orgId = value; 
+						this.step++; 
+						resolve(true);
+					}
+				}, this, disposables);
+
+				input.onDidChangeValue(async text => {
+					if (validate(text)) {
+						input.validationMessage = undefined;
+					} else {
+						input.validationMessage = "Organization ID is invalid";
+					}
+				}, this, disposables);
+
+				input.onDidHide(() => {
+					reject(); 
+				}, this, disposables);
 
 				input.show();
 			});

@@ -1,17 +1,22 @@
 import * as vscode from 'vscode';
 import { ServerDetails } from "./server-details";
-import { ServerRepository } from "./server-repository";
-import { InfluxDBClient, PointFieldType, QueryType } from '@influxdata/influxdb3-client';
+import { PointFieldType, QueryType } from '@influxdata/influxdb3-client';
+import { FLUX_QUERY_PARAMETER_ERROR, InfluxLanguages } from './constants';
+import { extractQuery } from './extract-query';
+import { QueryParameter, transformQueryParametersToInflux } from './query-parameter';
+import { IInfluxFactory } from './influx-factory';
+import { cleanStringForCSV } from './csv-utilities';
 
 interface FieldDefinition {field: boolean, name:string, type:PointFieldType | undefined}
 
-async function executeQuery(server: ServerDetails | null, query:string | undefined, queryType: QueryType ) {
+// Executes a query using the client 3. 
+async function executeSQLQuery(server: ServerDetails | null, query:string | undefined, queryType: QueryType, queryParameters: QueryParameter[] | null | undefined, influxFactory: IInfluxFactory ) {
     let result:string | null = null; 
     if(server && query){
-        const client = new InfluxDBClient({host: server.serverAddress, token: server.serverToken, database: server.bucket}); 
+        const client = influxFactory.getClient3(server); 
 
         try{
-            const queryResult = client.queryPoints(query, server.bucket, { type: queryType});
+            const queryResult = client.queryPoints(query, server.bucket, { type: queryType, params:transformQueryParametersToInflux(queryParameters)});
 
             let stuffToIterateThrough: string[] = [];
             let stuffLookup: Record<string,FieldDefinition> = {};
@@ -58,7 +63,7 @@ async function executeQuery(server: ServerDetails | null, query:string | undefin
                     }
                 }
 
-                let myRow = parts.join(",");
+                let myRow = parts.join(",\t");
                 rows.push(myRow); 
             }
 
@@ -68,7 +73,7 @@ async function executeQuery(server: ServerDetails | null, query:string | undefin
                 header1.push(cleanStringForCSV(myFieldDefinition.name));
             }
 
-            rows.unshift(header1.join(","));
+            rows.unshift(header1.join(",\t"));
             result = rows.join("\n");
 
         }
@@ -83,25 +88,52 @@ async function executeQuery(server: ServerDetails | null, query:string | undefin
     return result;
 }
 
-function cleanStringForCSV(value:string | null | undefined){
-    value = value ?? ''; 
-    value.trim(); 
-    value.replaceAll(`"`, `""`);
-    if(value.includes(",")){
-        value = `"${value}"`;
-    }                   
-    return value; 
+// Executes a query using the client 2 
+async function executeFluxQuery(server: ServerDetails | null, query:string | undefined, influxFactory: IInfluxFactory ) {
+
+    let result:string | null = null; 
+    if(server && query){
+
+        const queryApi = influxFactory.getClient2(server);
+        let rows:string[] = [];
+        let header:string | null = null; 
+        
+        for await (const {values, tableMeta} of queryApi.iterateRows(query)){
+            if(!header){
+                header = tableMeta.columns.map(n=> cleanStringForCSV(n.label)).join(",\t");
+            }
+            rows.push(values.map(n=>cleanStringForCSV(n)).join(",\t"));
+        }
+        rows.unshift(header ?? '');
+        result = rows.join("\n");
+
+    }
+    return result;
 }
 
-async function executeQueryAndCreateDocument(selectionLabel:string, queryText:string | undefined, context: vscode.ExtensionContext, displayedEditor: vscode.TextEditor | undefined | null ){
-    // Grab the selected server details from the repository.  
-    const serverInfo = await ServerRepository.getServer(selectionLabel, context); 
+// Executes the query using either the version 2 or version 3 api depending on language. 
+async function executeQuery(server: ServerDetails | null, query:string | undefined, queryType: InfluxLanguages, influxFactory:IInfluxFactory) {
 
+    const {queryText, parameters} = extractQuery(query ?? '');
+
+    if(queryType === 'flux'){
+        if(parameters?.length){
+            return FLUX_QUERY_PARAMETER_ERROR;
+        }
+        return await executeFluxQuery(server, queryText, influxFactory);
+    }
+    else {
+        return await executeSQLQuery(server, queryText, queryType === 'sql' ? 'sql' : 'influxql', parameters, influxFactory);
+    }
+}
+
+//Used to execute the query against influx and display the output.  
+async function executeQueryAndCreateDocument(queryText:string | undefined, serverInfo:ServerDetails | null, displayedEditor: vscode.TextEditor | undefined | null , queryType: InfluxLanguages, influxFactory:IInfluxFactory){
     // Let the user know the execution is starting 
     vscode.window.showInformationMessage(`Executing query against: ${serverInfo?.serverAddress}` );
 
     // Actually execute against the server. 
-    const queryResult = (await executeQuery(serverInfo, queryText, "sql")) ?? "Empty Result";
+    const queryResult = (await executeQuery(serverInfo, queryText, queryType, influxFactory)) ?? "Empty Result";
 
     // If we already have somewhere to display results then display them there.  
     if(displayedEditor){
@@ -123,8 +155,6 @@ async function executeQueryAndCreateDocument(selectionLabel:string, queryText:st
     const document = await vscode.workspace.openTextDocument({language:"csv", content:queryResult});
     const newEditor = await vscode.window.showTextDocument(document,vscode.ViewColumn.Beside, true);
     return newEditor;
-    
-
 }
 
-export {executeQuery,executeQueryAndCreateDocument}; 
+export {executeQueryAndCreateDocument}; 

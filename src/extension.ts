@@ -1,10 +1,11 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { ADD_SERVER_LABEL, NO_SELECTION_MESSAGE, REMOVE_SERVER_LABEL } from './constants';
+import { ADD_SERVER_LABEL, InfluxLanguages, NO_SELECTION_MESSAGE, REMOVE_SERVER_LABEL } from './constants';
 import { addServer } from './add-server-input';
 import { ServerRepository } from './server-repository';
-import { executeQuery, executeQueryAndCreateDocument } from './query-executor';
+import { executeQueryAndCreateDocument } from './query-executor';
+import { IInfluxFactory, InfluxFactory } from './influx-factory';
 
 let relevantLangages = new Set<string>(['sql','flux','influxql']); 
 let myStatusBarItem: vscode.StatusBarItem; 
@@ -71,7 +72,7 @@ export function activate(context: vscode.ExtensionContext) {
 				// Here we update the saved server selection.  This block is async, but we call it without await because we don't need the result.  
 				ServerRepository.saveServerSelection(myServer, context);
 				ServerRepository.getServer(selectionLabel, context).then((serverInfo)=>{
-					vscode.window.showInformationMessage(`Selected name=${serverInfo?.serverName}, address=${serverInfo?.serverAddress}, token=${serverInfo?.serverToken}, bucket=${serverInfo?.bucket}` );
+					vscode.window.showInformationMessage(`Selected name=${serverInfo?.serverName}, address=${serverInfo?.serverAddress}, token=${serverInfo?.token}, bucket=${serverInfo?.bucket}` );
 				});
 				quickPick.hide(); 
 			}
@@ -83,15 +84,20 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	context.subscriptions.push(selectServerCommand);
 
+	// This is the 'run' behavior. 
 	const executeQueryCommandId = 'influxcloudextension.influxquery';
 	const executeQueryCommand = vscode.commands.registerCommand(executeQueryCommandId, () => {
 		const selectionLabel = ServerRepository.getServerSelection(context) || NO_SELECTION_MESSAGE;
 		const queryText = vscode.window.activeTextEditor?.document.getText();
-		executeQueryAndCreateDocument(selectionLabel, queryText, context, displayedEditor)
-		.then(newDisplayedEditor => {
+
+		const language = vscode.window.activeTextEditor?.document.languageId?.toLocaleLowerCase() as InfluxLanguages;
+		const influxFactory: IInfluxFactory = new InfluxFactory(); 
+		    // Grab the selected server details from the repository.  
+		ServerRepository.getServer(selectionLabel, context).then(serverInfo => {
+			return executeQueryAndCreateDocument(queryText, serverInfo, displayedEditor, language, influxFactory);
+		}).then(newDisplayedEditor => {
 			displayedEditor = newDisplayedEditor; 
-		})
-		.catch(err => {
+		}).catch(err => {
 			vscode.window.showErrorMessage("Query execution failed" );
 			console.error("Unable to execute query");
 		});
@@ -108,7 +114,9 @@ export function activate(context: vscode.ExtensionContext) {
 	// Grab the saved server if it exists. 
 	myServer = ServerRepository.getServerSelection(context) || NO_SELECTION_MESSAGE;
 
-	updateStatusBarItem(); 
+	updateStatusBarItem();
+	
+	return context; 
 }
 
 function updateStatusBarItem(e?: vscode.TextEditor):void {

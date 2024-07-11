@@ -1,7 +1,8 @@
 interface ServerDetails {
     serverName:string;
     serverAddress:string;
-    serverToken:string; 
+    token:string; 
+    orgId:string;
     bucket:string;
 };
 
