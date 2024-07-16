@@ -3,18 +3,20 @@
   "displayName": "InfluxCloudExtension",
   "description": "Extension for interacting with InfluxDB Cloud",
   "publisher": "joshneedsajob",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "engines": {
     "vscode": "^1.90.0"
   },
   "categories": [
     "Other"
   ],
+  "keywords": ["Influx", "InfluxQL", "Flux", "SQL","InfluxDB", "InfluxDB Cloud 2.0"],
   "activationEvents": [
     "onLanguage:sql",
     "onLanguage:flux",
     "onLanguage:influxql"
   ],
+  "icon": "resources/Duck.png",
   "repository": {"type":"git", "url":"git+https://github.com/JoshNeedsAJob/InfluxCloudExtension.git" },
   "homepage": "https://murderducks.com",
   "license":"MIT",
