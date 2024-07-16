@@ -1,7 +1,7 @@
 import { QuickInputButtons,QuickInputButton, window, Disposable, Uri, ExtensionContext, InputBox } from "vscode";
 import { ServerDetails } from "./server-details";
 import { ServerRepository } from "./server-repository";
-import { ADD_SERVER_LABEL, REMOVE_SERVER_LABEL } from "./constants";
+import { ADD_SERVER_LABEL, REMOVE_SERVER_LABEL, STOP_ICON_DARK, STOP_ICON_LIGHT } from "./constants";
 
 async function addServer(context: ExtensionContext ) {
 	const existingServers = await ServerRepository.getServers(context);
@@ -61,8 +61,8 @@ class AddServerInput {
 
 	private async getServerName(){
 		const CancelButton: QuickInputButton = { tooltip:'Cancel', iconPath:{
-			dark: Uri.file(this.context.asAbsolutePath('resources/dark/circle-stop.svg')),
-			light: Uri.file(this.context.asAbsolutePath('resources/light/circle-stop.svg')),
+			dark: Uri.file(this.context.asAbsolutePath(STOP_ICON_DARK)),
+			light: Uri.file(this.context.asAbsolutePath(STOP_ICON_LIGHT)),
 		}};
 
 		const disposables: Disposable[] = [];
@@ -123,8 +123,8 @@ class AddServerInput {
 
 	private async getServerAddress(){
 		const CancelButton: QuickInputButton = { tooltip:'Cancel', iconPath:{
-			dark: Uri.file(this.context.asAbsolutePath('resources/dark/add.svg')),
-			light: Uri.file(this.context.asAbsolutePath('resources/light/add.svg')),
+			dark: Uri.file(this.context.asAbsolutePath(STOP_ICON_DARK)),
+			light: Uri.file(this.context.asAbsolutePath(STOP_ICON_LIGHT)),
 		}};
 
 		const disposables: Disposable[] = [];
@@ -188,8 +188,8 @@ class AddServerInput {
 
 	private async getToken(){
 		const CancelButton: QuickInputButton = { tooltip:'Cancel', iconPath:{
-			dark: Uri.file(this.context.asAbsolutePath('resources/dark/add.svg')),
-			light: Uri.file(this.context.asAbsolutePath('resources/light/add.svg')),
+			dark: Uri.file(this.context.asAbsolutePath(STOP_ICON_DARK)),
+			light: Uri.file(this.context.asAbsolutePath(STOP_ICON_LIGHT)),
 		}};
 
 		const disposables: Disposable[] = [];
@@ -249,8 +249,8 @@ class AddServerInput {
 
 	private async getBucket() {
 		const CancelButton: QuickInputButton = { tooltip:'Cancel', iconPath:{
-			dark: Uri.file(this.context.asAbsolutePath('resources/dark/add.svg')),
-			light: Uri.file(this.context.asAbsolutePath('resources/light/add.svg')),
+			dark: Uri.file(this.context.asAbsolutePath(STOP_ICON_DARK)),
+			light: Uri.file(this.context.asAbsolutePath(STOP_ICON_LIGHT)),
 		}};
 
 		const disposables: Disposable[] = [];
@@ -310,8 +310,8 @@ class AddServerInput {
 
 	private async getOrganization() {
 		const CancelButton: QuickInputButton = { tooltip:'Cancel', iconPath:{
-			dark: Uri.file(this.context.asAbsolutePath('resources/dark/add.svg')),
-			light: Uri.file(this.context.asAbsolutePath('resources/light/add.svg')),
+			dark: Uri.file(this.context.asAbsolutePath(STOP_ICON_DARK)),
+			light: Uri.file(this.context.asAbsolutePath(STOP_ICON_LIGHT)),
 		}};
 
 		const disposables: Disposable[] = [];
