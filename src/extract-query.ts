@@ -1,3 +1,4 @@
+import { PARAMETER_REGEX } from "./constants";
 import { QueryParameter } from "./query-parameter";
 
 
@@ -6,12 +7,10 @@ const extractQuery = (rawQuery:string) => {
     const parameters: QueryParameter[] = [];
     const resultLines:string [] = [];
 
-    const parameterRegex = /\#\$([\w\d]+)[ \t]*(\:[ \t]*(string|number|boolean))?[ \t]*\=[ \t]*([^\n]+)/;
-
     for(const l of rawLines){
         
-        if(parameterRegex.test(l)){
-            const regexMatch = parameterRegex.exec(l);
+        if(PARAMETER_REGEX.test(l)){
+            const regexMatch = PARAMETER_REGEX.exec(l);
             if(regexMatch && regexMatch[1]){
                 const myName = regexMatch[1]?.trim();
                 const myType = regexMatch[3]?.trim()?.toLowerCase() || 'string';

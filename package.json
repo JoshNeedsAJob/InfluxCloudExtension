@@ -62,7 +62,25 @@
         "key": "f5",
         "when": "editorLangId == 'sql' || editorLangId == 'flux' || editorLangId == 'influxql'"
       }
-    ]
+    ],
+    "configuration":{
+      "title": "InfluxCloudExtension",
+      "properties": {
+        "influxcloudextension.outputFormat":{
+          "default":"csv",
+          "type":"string",
+          "description": "Format used for displaying output data, only applies to SQL and InfluxQL queries.",
+          "enum": ["csv","weirdcsv","lineprotocol"],
+          "enumDescriptions": ["CSV", "Annotated CSV", "Line Protocol"],
+          "enumItemLabels": ["CSV", "Weird CSV", "Line Protocol"]
+        },
+        "influxcloudextension.maxRows":{
+          "default":0,
+          "type":"integer",
+          "description": "Maximum number of rows to display.  If <=0 all rows will be displayed. "
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

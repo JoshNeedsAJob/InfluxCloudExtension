@@ -6,6 +6,7 @@ import { addServer } from './add-server-input';
 import { ServerRepository } from './server-repository';
 import { executeQueryAndCreateDocument } from './query-executor';
 import { IInfluxFactory, InfluxFactory } from './influx-factory';
+import { triggerUpdateDecorations } from './parameter-highlight';
 
 let relevantLangages = new Set<string>(['sql','flux','influxql']); 
 let myStatusBarItem: vscode.StatusBarItem; 
@@ -92,9 +93,11 @@ export function activate(context: vscode.ExtensionContext) {
 
 		const language = vscode.window.activeTextEditor?.document.languageId?.toLocaleLowerCase() as InfluxLanguages;
 		const influxFactory: IInfluxFactory = new InfluxFactory(); 
+		const outputFormat = vscode.workspace.getConfiguration("influxcloudextension")?.outputFormat ?? "csv";
+		const maxRows = vscode.workspace.getConfiguration("influxcloudextension")?.maxRows ?? 0;
 		    // Grab the selected server details from the repository.  
 		ServerRepository.getServer(selectionLabel, context).then(serverInfo => {
-			return executeQueryAndCreateDocument(queryText, serverInfo, displayedEditor, language, influxFactory);
+			return executeQueryAndCreateDocument(queryText, serverInfo, displayedEditor, language, influxFactory, outputFormat, maxRows);
 		}).then(newDisplayedEditor => {
 			displayedEditor = newDisplayedEditor; 
 		}).catch(err => {
@@ -116,6 +119,22 @@ export function activate(context: vscode.ExtensionContext) {
 
 	updateStatusBarItem();
 	
+
+	let activeEditor = vscode.window.activeTextEditor;
+	vscode.window.onDidChangeActiveTextEditor(editor => {
+		activeEditor = editor;
+		if (editor) {
+			triggerUpdateDecorations(activeEditor);
+		}
+	}, null, context.subscriptions);
+
+	vscode.workspace.onDidChangeTextDocument(event => {
+		if (activeEditor && event.document === activeEditor.document) {
+			triggerUpdateDecorations(activeEditor, true);
+		}
+	}, null, context.subscriptions);
+
+
 	return context; 
 }
 

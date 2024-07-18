@@ -12,6 +12,14 @@ const returnDateShiftedByMinutes = (d:Date, minutes:number) => {
     return result; 
 };
 
+const returnDateShiftedByMinutesAsISOSting = (d:Date, minutes:number) => {
+  return returnDateShiftedByMinutes(d, minutes).toISOString(); 
+};
+
+const returnDateShiftedByMinutesAsNumber = (d:Date, minutes:number) => {
+  return returnDateShiftedByMinutes(d, minutes).getTime(); 
+};
+
 const createMockAsyncIterator = <T>(values:T[])=>{
 
     const result = {
@@ -30,4 +38,4 @@ const createMockAsyncIterator = <T>(values:T[])=>{
     return result; 
 };
 
-export {multiResultFake, returnDateShiftedByMinutes, createMockAsyncIterator};
+export {multiResultFake, returnDateShiftedByMinutes, createMockAsyncIterator,returnDateShiftedByMinutesAsNumber,returnDateShiftedByMinutesAsISOSting};
