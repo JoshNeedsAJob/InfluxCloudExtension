@@ -80,17 +80,21 @@ const updateDecorations = (activeEditor: vscode.TextEditor) => {
         parameter_values.push({ range: new vscode.Range(startPos_value, endPos_value), hoverMessage: 'Value **' + match[4] + '**' });
 
     }
-
+    
     activeEditor.setDecorations(nameDecorationType, parameter_names);
     activeEditor.setDecorations(typeDecorationType, parameter_types);
     activeEditor.setDecorations(valueDecorationType, parameter_values);
 }; 
 
-const triggerUpdateDecorations = (activeEditor: vscode.TextEditor | undefined, throttle:boolean = false) => {
+const cancelTimeout = ()=>{
     if (timeout) {
         clearTimeout(timeout);
         timeout = undefined;
     }
+};
+
+const triggerUpdateDecorations = (activeEditor: vscode.TextEditor | undefined, throttle:boolean = false) => {
+    cancelTimeout();
 
     if(activeEditor && (activeEditor.document.languageId === "sql" || activeEditor.document.languageId === "influxql")){
         if (throttle) {
@@ -101,4 +105,4 @@ const triggerUpdateDecorations = (activeEditor: vscode.TextEditor | undefined, t
     }
 };
 
-export {triggerUpdateDecorations}; 
+export {triggerUpdateDecorations,cancelTimeout}; 
